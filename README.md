@@ -13,6 +13,7 @@ A simple endless runner game inspired by Mario, created with p5.js.
 7. The game gradually gets faster as you play
 8. If you hit a goomba, the game ends
 9. Press SPACE to restart after game over
+10. Press M to toggle sound on/off
 
 ## Features
 
@@ -27,10 +28,14 @@ A simple endless runner game inspired by Mario, created with p5.js.
 - Simple collision detection
 - Game over state with restart functionality
 - Version number display in top-right corner
+- Background music and sound effects
+- Sound toggle functionality (press M to mute/unmute)
 
 ## Implementation Notes
 
 The game uses p5.js's built-in drawing functions to render all game elements directly on the canvas. This approach eliminates the need for external image and sound assets, making the game completely self-contained and easy to run in any browser without 404 errors.
+
+For audio, the game uses p5.js's sound capabilities (p5.Oscillator and p5.MonoSynth) to generate simple sound effects and background music directly in the browser without requiring external audio files.
 
 If you want to use custom assets instead of the built-in graphics, you can use the `create_assets.html` file to generate simple image assets, or replace the drawing code in each class's `display()` method with your own image loading and rendering code.
 
@@ -39,6 +44,7 @@ If you want to use custom assets instead of the built-in graphics, you can use t
 - **SPACE** - Jump / Restart game after game over
 - **LEFT ARROW** - Move Mario left
 - **RIGHT ARROW** - Move Mario right
+- **M** - Toggle sound on/off
 
 ## Preview
 
@@ -49,10 +55,17 @@ The game features:
 - Golden coins to collect
 - White clouds in the background
 - Brown ground tiles
+- Background music and sound effects for actions
 
 ## Notes
 
 This is a simplified version of Mario for educational purposes. The game doesn't include all features from the original Mario games but captures the core endless runner mechanics.
+
+## Version History
+
+- v1.0: Basic endless runner with Mario graphics
+- v1.1: Added left/right movement and pipe collision without game over
+- v1.2: Added sound effects and background music with mute option
 
 ## Assets
 

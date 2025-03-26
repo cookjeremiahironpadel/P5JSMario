@@ -7,12 +7,74 @@ let coins = [];
 let gameSpeed = 5;
 let score = 0;
 let isGameOver = false;
-const VERSION = "v1.1"; // Version number
+const VERSION = "v1.2"; // Updated version number
+
+// Sound variables
+let jumpSound;
+let coinSound;
+let gameOverSound;
+let bumpSound;
+let bgMusic;
+let isMuted = false;
 
 // Preload assets
+function preload() {
+  // Load sounds
+  soundFormats('mp3');
+  // Using p5.js built-in methods to create sounds
+  jumpSound = new p5.Oscillator('sine');
+  coinSound = new p5.Oscillator('sine');
+  gameOverSound = new p5.Oscillator('sawtooth');
+  bumpSound = new p5.Oscillator('triangle');
+  
+  // Create background music using p5.MonoSynth
+  bgMusic = new p5.MonoSynth();
+}
+
 function setup() {
   createCanvas(800, 400);
   setupGame();
+  
+  // Setup sound settings
+  jumpSound.freq(440); // A4
+  jumpSound.amp(0.2);
+  
+  coinSound.freq(880); // A5
+  coinSound.amp(0.2);
+  
+  gameOverSound.freq(220); // A3
+  gameOverSound.amp(0.2);
+  
+  bumpSound.freq(330); // E4
+  bumpSound.amp(0.1);
+  
+  // Start background music sequence
+  startBgMusic();
+}
+
+function startBgMusic() {
+  // Only start music if not muted
+  if (!isMuted) {
+    // Simple music sequence that loops
+    let notePattern = ['C4', 'E4', 'G4', 'C5', 'G4', 'E4'];
+    let duration = 0.2;
+    
+    // Play the sequence with a slight delay between notes
+    for (let i = 0; i < notePattern.length; i++) {
+      setTimeout(() => {
+        if (!isMuted) {
+          bgMusic.play(notePattern[i], 0.2, 0, duration);
+        }
+        
+        // If at the end of the sequence, loop it
+        if (i === notePattern.length - 1) {
+          setTimeout(() => {
+            startBgMusic();
+          }, duration * 1000);
+        }
+      }, i * duration * 1000);
+    }
+  }
 }
 
 function setupGame() {
@@ -90,6 +152,10 @@ function draw() {
   textAlign(RIGHT);
   textSize(16);
   text(VERSION, width - 20, 30);
+  
+  // Draw sound control
+  textSize(16);
+  text(isMuted ? "🔇" : "🔊", width - 50, 30);
   
   // Game over screen
   if (isGameOver) {
@@ -173,6 +239,14 @@ function checkCollisions() {
     if (mario.collidesWith(coins[i])) {
       score += 10;
       coins.splice(i, 1);
+      
+      // Play coin sound
+      if (!isMuted) {
+        coinSound.start();
+        setTimeout(() => {
+          coinSound.stop();
+        }, 150);
+      }
     }
   }
   
@@ -185,6 +259,14 @@ function checkCollisions() {
       } else {
         // Bump into pipe - push Mario back
         mario.bumpIntoPipe(obstacles[i]);
+        
+        // Play bump sound
+        if (!isMuted) {
+          bumpSound.start();
+          setTimeout(() => {
+            bumpSound.stop();
+          }, 100);
+        }
       }
     }
   }
@@ -192,14 +274,47 @@ function checkCollisions() {
 
 function gameOver() {
   isGameOver = true;
+  
+  // Play game over sound
+  if (!isMuted) {
+    gameOverSound.start();
+    setTimeout(() => {
+      gameOverSound.stop();
+    }, 500);
+  }
 }
 
 function keyPressed() {
-  if (keyCode === 32) { // SPACE key
+  // Space for jump and restart
+  if (keyCode === 32) { 
     if (!isGameOver && mario.isOnGround) {
       mario.jump();
+      
+      // Play jump sound
+      if (!isMuted) {
+        jumpSound.start();
+        setTimeout(() => {
+          jumpSound.stop();
+        }, 200);
+      }
     } else if (isGameOver) {
       setupGame();
+    }
+  }
+  
+  // M key to toggle mute
+  if (keyCode === 77) { // 'M' key
+    isMuted = !isMuted;
+    
+    if (isMuted) {
+      // Stop all sounds when muted
+      jumpSound.stop();
+      coinSound.stop();
+      gameOverSound.stop();
+      bumpSound.stop();
+    } else {
+      // Restart background music when unmuted
+      startBgMusic();
     }
   }
 }
