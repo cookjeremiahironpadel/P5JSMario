@@ -6,16 +6,20 @@ A simple endless runner game inspired by Mario, created with p5.js.
 
 1. Open `index.html` in a web browser
 2. Press SPACE to jump
-3. Avoid obstacles (pipes and goombas)
-4. Collect coins to increase your score
-5. The game gradually gets faster as you play
-6. If you hit an obstacle, the game ends
-7. Press SPACE to restart after game over
+3. Use LEFT and RIGHT arrow keys to move horizontally
+4. Avoid goombas (they will end your game)
+5. You can bump into pipes (you won't die, but will get pushed back)
+6. Collect coins to increase your score
+7. The game gradually gets faster as you play
+8. If you hit a goomba, the game ends
+9. Press SPACE to restart after game over
 
 ## Features
 
 - Mario character with jumping animation
+- Left/right movement controls for more flexibility
 - Randomly generated obstacles (pipes and goombas)
+- Only goombas kill you - pipes just push you back
 - Collectible coins that increase your score
 - Parallax scrolling clouds
 - Ground tiles that create the terrain
@@ -32,12 +36,15 @@ If you want to use custom assets instead of the built-in graphics, you can use t
 ## Controls
 
 - **SPACE** - Jump / Restart game after game over
+- **LEFT ARROW** - Move Mario left
+- **RIGHT ARROW** - Move Mario right
 
 ## Preview
 
 The game features:
 - A red and blue Mario character
-- Green pipes and brown goomba enemies as obstacles
+- Green pipes (bump into them to get pushed back)
+- Brown goomba enemies (avoid these as they'll end your game)
 - Golden coins to collect
 - White clouds in the background
 - Brown ground tiles

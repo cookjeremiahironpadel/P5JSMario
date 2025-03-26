@@ -61,6 +61,9 @@ function draw() {
       grounds.push(new Ground(width, height - 20));
     }
     
+    // Check for keyboard input
+    handleKeyboard();
+    
     // Update and remove off-screen objects
     updateObjects();
     
@@ -91,6 +94,16 @@ function draw() {
     textSize(24);
     fill(255);
     text('Press SPACE to restart', width/2, height/2 + 40);
+  }
+}
+
+function handleKeyboard() {
+  // Left and right movement
+  if (keyIsDown(LEFT_ARROW)) {
+    mario.moveLeft();
+  }
+  if (keyIsDown(RIGHT_ARROW)) {
+    mario.moveRight();
   }
 }
 
@@ -160,7 +173,13 @@ function checkCollisions() {
   // Check for obstacle collisions
   for (let i = obstacles.length - 1; i >= 0; i--) {
     if (mario.collidesWith(obstacles[i])) {
-      gameOver();
+      // Only die if it's a goomba, otherwise just bump
+      if (obstacles[i].isGoomba) {
+        gameOver();
+      } else {
+        // Bump into pipe - push Mario back
+        mario.bumpIntoPipe(obstacles[i]);
+      }
     }
   }
 }
@@ -185,17 +204,33 @@ class Mario {
     this.x = 80;
     this.y = height - 70;
     this.vy = 0;
+    this.vx = 0;
     this.gravity = 0.6;
     this.jumpForce = -15;
+    this.moveSpeed = 5;
     this.width = 50;
     this.height = 50;
     this.isOnGround = true;
+    this.isBumping = false;
+    this.bumpTimer = 0;
   }
   
   update() {
     // Apply gravity
     this.vy += this.gravity;
     this.y += this.vy;
+    
+    // Apply horizontal movement (with friction)
+    this.x += this.vx;
+    this.vx *= 0.9; // Add friction
+    
+    // Keep Mario within screen bounds
+    if (this.x < 0) {
+      this.x = 0;
+    }
+    if (this.x > width - this.width) {
+      this.x = width - this.width;
+    }
     
     // Ground collision
     if (this.y > height - 70) {
@@ -205,6 +240,22 @@ class Mario {
     } else {
       this.isOnGround = false;
     }
+    
+    // Handle bumping animation
+    if (this.isBumping) {
+      this.bumpTimer--;
+      if (this.bumpTimer <= 0) {
+        this.isBumping = false;
+      }
+    }
+  }
+  
+  moveLeft() {
+    this.vx = -this.moveSpeed;
+  }
+  
+  moveRight() {
+    this.vx = this.moveSpeed;
   }
   
   jump() {
@@ -214,7 +265,23 @@ class Mario {
     }
   }
   
+  bumpIntoPipe(pipe) {
+    // Push Mario back from pipe
+    if (this.x + this.width > pipe.x) {
+      this.vx = -5; // Push back
+      this.isBumping = true;
+      this.bumpTimer = 10;
+    }
+  }
+  
   display() {
+    // Tint red if bumping into pipe
+    if (this.isBumping) {
+      tint(255, 100, 100);
+    } else {
+      noTint();
+    }
+    
     if (this.isOnGround) {
       // Draw standing Mario
       fill(255, 0, 0); // Red for Mario's cap/shirt
