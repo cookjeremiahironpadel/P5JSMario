@@ -7,6 +7,7 @@ let coins = [];
 let gameSpeed = 5;
 let score = 0;
 let isGameOver = false;
+const VERSION = "v1.1"; // Version number
 
 // Preload assets
 function setup() {
@@ -84,6 +85,11 @@ function draw() {
   textSize(24);
   textAlign(LEFT);
   text('Score: ' + score, 20, 30);
+  
+  // Draw version number
+  textAlign(RIGHT);
+  textSize(16);
+  text(VERSION, width - 20, 30);
   
   // Game over screen
   if (isGameOver) {

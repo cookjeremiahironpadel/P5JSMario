@@ -26,6 +26,7 @@ A simple endless runner game inspired by Mario, created with p5.js.
 - Increasing difficulty as game progresses
 - Simple collision detection
 - Game over state with restart functionality
+- Version number display in top-right corner
 
 ## Implementation Notes
 
