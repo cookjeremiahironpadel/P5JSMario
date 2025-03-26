@@ -7,38 +7,74 @@ let coins = [];
 let gameSpeed = 5;
 let score = 0;
 let isGameOver = false;
-let jumpSound, coinSound, dieSound;
-let bgImg, marioImg, marioJumpImg, groundImg, pipeImg, cloudImg, coinImg, goombaImg;
-let assetsLoaded = false;
+const VERSION = "v1.2"; // Updated version number
+
+// Sound variables
+let jumpSound;
+let coinSound;
+let gameOverSound;
+let bumpSound;
+let bgMusic;
+let isMuted = false;
 
 // Preload assets
 function preload() {
-  // Use try/catch to handle missing assets
-  try {
-    marioImg = loadImage('assets/mario.png');
-    marioJumpImg = loadImage('assets/mario_jump.png');
-    groundImg = loadImage('assets/ground.png');
-    pipeImg = loadImage('assets/pipe.png');
-    cloudImg = loadImage('assets/cloud.png');
-    coinImg = loadImage('assets/coin.png');
-    goombaImg = loadImage('assets/goomba.png');
-    
-    // Try to load sounds if available
-    soundFormats('mp3');
-    jumpSound = loadSound('assets/jump.mp3');
-    coinSound = loadSound('assets/coin.mp3');
-    dieSound = loadSound('assets/die.mp3');
-    
-    assetsLoaded = true;
-  } catch (e) {
-    console.log('Some assets failed to load. Using fallback graphics.');
-    assetsLoaded = false;
-  }
+  // Load sounds
+  soundFormats('mp3');
+  // Using p5.js built-in methods to create sounds
+  jumpSound = new p5.Oscillator('sine');
+  coinSound = new p5.Oscillator('sine');
+  gameOverSound = new p5.Oscillator('sawtooth');
+  bumpSound = new p5.Oscillator('triangle');
+  
+  // Create background music using p5.MonoSynth
+  bgMusic = new p5.MonoSynth();
 }
 
 function setup() {
   createCanvas(800, 400);
   setupGame();
+  
+  // Setup sound settings
+  jumpSound.freq(440); // A4
+  jumpSound.amp(0.2);
+  
+  coinSound.freq(880); // A5
+  coinSound.amp(0.2);
+  
+  gameOverSound.freq(220); // A3
+  gameOverSound.amp(0.2);
+  
+  bumpSound.freq(330); // E4
+  bumpSound.amp(0.1);
+  
+  // Start background music sequence
+  startBgMusic();
+}
+
+function startBgMusic() {
+  // Only start music if not muted
+  if (!isMuted) {
+    // Simple music sequence that loops
+    let notePattern = ['C4', 'E4', 'G4', 'C5', 'G4', 'E4'];
+    let duration = 0.2;
+    
+    // Play the sequence with a slight delay between notes
+    for (let i = 0; i < notePattern.length; i++) {
+      setTimeout(() => {
+        if (!isMuted) {
+          bgMusic.play(notePattern[i], 0.2, 0, duration);
+        }
+        
+        // If at the end of the sequence, loop it
+        if (i === notePattern.length - 1) {
+          setTimeout(() => {
+            startBgMusic();
+          }, duration * 1000);
+        }
+      }, i * duration * 1000);
+    }
+  }
 }
 
 function setupGame() {
@@ -88,6 +124,9 @@ function draw() {
       grounds.push(new Ground(width, height - 20));
     }
     
+    // Check for keyboard input
+    handleKeyboard();
+    
     // Update and remove off-screen objects
     updateObjects();
     
@@ -109,6 +148,15 @@ function draw() {
   textAlign(LEFT);
   text('Score: ' + score, 20, 30);
   
+  // Draw version number
+  textAlign(RIGHT);
+  textSize(16);
+  text(VERSION, width - 20, 30);
+  
+  // Draw sound control
+  textSize(16);
+  text(isMuted ? "🔇" : "🔊", width - 50, 30);
+  
   // Game over screen
   if (isGameOver) {
     textAlign(CENTER);
@@ -118,6 +166,16 @@ function draw() {
     textSize(24);
     fill(255);
     text('Press SPACE to restart', width/2, height/2 + 40);
+  }
+}
+
+function handleKeyboard() {
+  // Left and right movement
+  if (keyIsDown(LEFT_ARROW)) {
+    mario.moveLeft();
+  }
+  if (keyIsDown(RIGHT_ARROW)) {
+    mario.moveRight();
   }
 }
 
@@ -181,8 +239,13 @@ function checkCollisions() {
     if (mario.collidesWith(coins[i])) {
       score += 10;
       coins.splice(i, 1);
-      if (assetsLoaded && coinSound) {
-        coinSound.play();
+      
+      // Play coin sound
+      if (!isMuted) {
+        coinSound.start();
+        setTimeout(() => {
+          coinSound.stop();
+        }, 150);
       }
     }
   }
@@ -190,27 +253,68 @@ function checkCollisions() {
   // Check for obstacle collisions
   for (let i = obstacles.length - 1; i >= 0; i--) {
     if (mario.collidesWith(obstacles[i])) {
-      gameOver();
+      // Only die if it's a goomba, otherwise just bump
+      if (obstacles[i].isGoomba) {
+        gameOver();
+      } else {
+        // Bump into pipe - push Mario back
+        mario.bumpIntoPipe(obstacles[i]);
+        
+        // Play bump sound
+        if (!isMuted) {
+          bumpSound.start();
+          setTimeout(() => {
+            bumpSound.stop();
+          }, 100);
+        }
+      }
     }
   }
 }
 
 function gameOver() {
   isGameOver = true;
-  if (assetsLoaded && dieSound) {
-    dieSound.play();
+  
+  // Play game over sound
+  if (!isMuted) {
+    gameOverSound.start();
+    setTimeout(() => {
+      gameOverSound.stop();
+    }, 500);
   }
 }
 
 function keyPressed() {
-  if (keyCode === 32) { // SPACE key
+  // Space for jump and restart
+  if (keyCode === 32) { 
     if (!isGameOver && mario.isOnGround) {
       mario.jump();
-      if (assetsLoaded && jumpSound) {
-        jumpSound.play();
+      
+      // Play jump sound
+      if (!isMuted) {
+        jumpSound.start();
+        setTimeout(() => {
+          jumpSound.stop();
+        }, 200);
       }
     } else if (isGameOver) {
       setupGame();
+    }
+  }
+  
+  // M key to toggle mute
+  if (keyCode === 77) { // 'M' key
+    isMuted = !isMuted;
+    
+    if (isMuted) {
+      // Stop all sounds when muted
+      jumpSound.stop();
+      coinSound.stop();
+      gameOverSound.stop();
+      bumpSound.stop();
+    } else {
+      // Restart background music when unmuted
+      startBgMusic();
     }
   }
 }
@@ -221,17 +325,33 @@ class Mario {
     this.x = 80;
     this.y = height - 70;
     this.vy = 0;
+    this.vx = 0;
     this.gravity = 0.6;
     this.jumpForce = -15;
+    this.moveSpeed = 5;
     this.width = 50;
     this.height = 50;
     this.isOnGround = true;
+    this.isBumping = false;
+    this.bumpTimer = 0;
   }
   
   update() {
     // Apply gravity
     this.vy += this.gravity;
     this.y += this.vy;
+    
+    // Apply horizontal movement (with friction)
+    this.x += this.vx;
+    this.vx *= 0.9; // Add friction
+    
+    // Keep Mario within screen bounds
+    if (this.x < 0) {
+      this.x = 0;
+    }
+    if (this.x > width - this.width) {
+      this.x = width - this.width;
+    }
     
     // Ground collision
     if (this.y > height - 70) {
@@ -241,6 +361,22 @@ class Mario {
     } else {
       this.isOnGround = false;
     }
+    
+    // Handle bumping animation
+    if (this.isBumping) {
+      this.bumpTimer--;
+      if (this.bumpTimer <= 0) {
+        this.isBumping = false;
+      }
+    }
+  }
+  
+  moveLeft() {
+    this.vx = -this.moveSpeed;
+  }
+  
+  moveRight() {
+    this.vx = this.moveSpeed;
   }
   
   jump() {
@@ -250,19 +386,51 @@ class Mario {
     }
   }
   
+  bumpIntoPipe(pipe) {
+    // Push Mario back from pipe
+    if (this.x + this.width > pipe.x) {
+      this.vx = -5; // Push back
+      this.isBumping = true;
+      this.bumpTimer = 10;
+    }
+  }
+  
   display() {
-    if (assetsLoaded) {
-      if (this.isOnGround) {
-        image(marioImg, this.x, this.y, this.width, this.height);
-      } else {
-        image(marioJumpImg, this.x, this.y, this.width, this.height);
-      }
+    // Tint red if bumping into pipe
+    if (this.isBumping) {
+      tint(255, 100, 100);
     } else {
-      // Fallback rendering with rectangles if assets aren't loaded
+      noTint();
+    }
+    
+    if (this.isOnGround) {
+      // Draw standing Mario
       fill(255, 0, 0); // Red for Mario's cap/shirt
-      rect(this.x, this.y, this.width, this.height);
-      fill(0, 0, 255); // Blue for overalls
-      rect(this.x + 10, this.y + 25, this.width - 20, this.height - 25);
+      rect(this.x, this.y, this.width, this.height/2);
+      
+      // Blue overalls
+      fill(0, 0, 255);
+      rect(this.x + 10, this.y + this.height/2, this.width - 20, this.height/2);
+      
+      // Face
+      fill(255, 200, 150);
+      rect(this.x + 15, this.y + 5, this.width - 30, this.height/3);
+    } else {
+      // Draw jumping Mario
+      fill(255, 0, 0); // Red for Mario's cap/shirt
+      rect(this.x, this.y, this.width, this.height/2);
+      
+      // Arms out in jump position
+      rect(this.x - 10, this.y + 15, 10, 5);
+      rect(this.x + this.width, this.y + 15, 10, 5);
+      
+      // Blue overalls
+      fill(0, 0, 255);
+      rect(this.x + 10, this.y + this.height/2, this.width - 20, this.height/2);
+      
+      // Face
+      fill(255, 200, 150);
+      rect(this.x + 15, this.y + 5, this.width - 30, this.height/3);
     }
   }
   
@@ -293,21 +461,36 @@ class Obstacle {
   }
   
   display() {
-    if (assetsLoaded) {
-      if (this.isGoomba) {
-        image(goombaImg, this.x, this.y, this.width, this.height);
-      } else {
-        image(pipeImg, this.x, this.y, this.width, this.height);
-      }
+    if (this.isGoomba) {
+      // Draw goomba
+      fill(139, 69, 19); // Brown for goomba
+      ellipse(this.x + this.width/2, this.y + this.height/2, this.width, this.height);
+      
+      // Feet
+      fill(0);
+      rect(this.x + 10, this.y + 45, 15, 5);
+      rect(this.x + 25, this.y + 45, 15, 5);
+      
+      // Eyes
+      fill(255);
+      ellipse(this.x + 15, this.y + 25, 10, 10);
+      ellipse(this.x + 35, this.y + 25, 10, 10);
+      
+      fill(0);
+      ellipse(this.x + 15, this.y + 25, 4, 4);
+      ellipse(this.x + 35, this.y + 25, 4, 4);
     } else {
-      // Fallback rendering
-      if (this.isGoomba) {
-        fill(139, 69, 19); // Brown for goomba
-        ellipse(this.x + this.width/2, this.y + this.height/2, this.width, this.height);
-      } else {
-        fill(0, 150, 0); // Green for pipe
-        rect(this.x, this.y, this.width, this.height);
-      }
+      // Draw pipe
+      fill(0, 150, 0); // Green for pipe
+      rect(this.x, this.y, this.width, this.height);
+      
+      // Highlight
+      fill(0, 200, 0);
+      rect(this.x + 5, this.y, 10, this.height);
+      
+      // Top rim
+      fill(0, 100, 0);
+      rect(this.x, this.y, this.width, 5);
     }
   }
   
@@ -329,16 +512,20 @@ class Coin {
   update() {
     this.x -= gameSpeed;
     this.frameCount++;
+    // Make coin "shine" by oscillating size
+    let oscillation = sin(frameCount * 0.1) * 3;
+    this.width = 30 + oscillation;
+    this.height = 30 + oscillation;
   }
   
   display() {
-    if (assetsLoaded) {
-      image(coinImg, this.x, this.y, this.width, this.height);
-    } else {
-      // Fallback rendering
-      fill(255, 215, 0); // Gold color
-      ellipse(this.x + this.width/2, this.y + this.height/2, this.width, this.height);
-    }
+    // Gold coin
+    fill(255, 215, 0);
+    ellipse(this.x + this.width/2, this.y + this.height/2, this.width, this.height);
+    
+    // Inner circle for depth
+    fill(255, 165, 0);
+    ellipse(this.x + this.width/2, this.y + this.height/2, this.width * 0.7, this.height * 0.7);
   }
   
   isOffScreen() {
@@ -360,16 +547,12 @@ class Cloud {
   }
   
   display() {
-    if (assetsLoaded) {
-      image(cloudImg, this.x, this.y, this.width, this.height);
-    } else {
-      // Fallback rendering
-      fill(255);
-      noStroke();
-      ellipse(this.x + 20, this.y + 20, 40, 30);
-      ellipse(this.x + 40, this.y + 20, 40, 40);
-      ellipse(this.x + 60, this.y + 20, 30, 30);
-    }
+    // Draw cloud with multiple circles
+    fill(255);
+    noStroke();
+    ellipse(this.x + 20, this.y + 20, 40, 30);
+    ellipse(this.x + 40, this.y + 15, 50, 40);
+    ellipse(this.x + 60, this.y + 20, 30, 30);
   }
   
   isOffScreen() {
@@ -391,13 +574,21 @@ class Ground {
   }
   
   display() {
-    if (assetsLoaded) {
-      image(groundImg, this.x, this.y, this.width, this.height);
-    } else {
-      // Fallback rendering
-      fill(139, 69, 19); // Brown for ground
-      rect(this.x, this.y, this.width, this.height);
-    }
+    // Brown base
+    fill(139, 69, 19);
+    rect(this.x, this.y, this.width, this.height);
+    
+    // Top edge
+    fill(160, 82, 45);
+    rect(this.x, this.y, this.width, 5);
+    
+    // Pattern
+    fill(101, 67, 33);
+    rect(this.x + 10, this.y + 5, 5, 5);
+    rect(this.x + 30, this.y + 5, 5, 5);
+    rect(this.x, this.y + 15, 5, 5);
+    rect(this.x + 20, this.y + 15, 5, 5);
+    rect(this.x + 40, this.y + 15, 5, 5);
   }
   
   isOffScreen() {
